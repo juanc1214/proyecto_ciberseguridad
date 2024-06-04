@@ -28,7 +28,7 @@ export default function SubastasPage({ account, contract }) {
               id: auctionId,
               nombre: auctionDetails['0'],
               descripcion: auctionDetails['1'],
-              fechaExp: dayjs.unix(Number(auctionDetails['2'])).format('MM-DD-YYYY  HH:mm A')
+              fechaExp: dayjs.unix(Number(auctionDetails['2'])).format()
             };
           })
         );
@@ -55,7 +55,7 @@ export default function SubastasPage({ account, contract }) {
             id: auctionId,
             nombre: auctionDetails['0'],
             descripcion: auctionDetails['1'],
-            fechaExp: dayjs.unix(Number(auctionDetails['2'])).format('MM-DD-YYYY  HH:mm A')
+            fechaExp: dayjs.unix(Number(auctionDetails['2'])).format()
           };
         })
       );
@@ -114,7 +114,7 @@ function SubastaItem({ subasta }) {
       </Box>
       
       <Typography width="20%" variant="caption" sx={{ pr: 3, flexShrink: 0, color: 'text.secondary', textAlign: 'center' }}>
-        {fechaExp}
+        {dayjs(fechaExp).format('DD/MM/YYYY HH:mm')}
       </Typography>
       
       <Box width="20%" sx={{ textAlign: 'right' }}>

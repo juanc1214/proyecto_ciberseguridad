@@ -34,7 +34,7 @@ export default function App() {
 
   useEffect(() => {
     if (web3 && account) {
-      const contractAddress = '0x9e1b05F53C76CE925ea4942E09b8750814597690';
+      const contractAddress = '0xD32c889363039444d26ACE569968bf8117128F67';
       const contractABI = [
         {
           "inputs": [
