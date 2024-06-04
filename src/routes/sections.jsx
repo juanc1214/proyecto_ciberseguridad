@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Outlet, Navigate, useRoutes } from 'react-router-dom';
+import { Outlet, useRoutes } from 'react-router-dom';
 
 import DashboardLayout from 'src/layouts/dashboard';
 
@@ -7,11 +7,7 @@ export const IndexPage = lazy(() => import('src/pages/app'));
 export const Subastas = lazy(() => import('src/pages/subastas'));
 export const Ofertar = lazy(() => import('src/pages/ofertar'));
 
-
-
-// ----------------------------------------------------------------------
-
-export default function Router() {
+export default function Router({ account, contract }) {
   const routes = useRoutes([
     {
       element: (
@@ -22,9 +18,9 @@ export default function Router() {
         </DashboardLayout>
       ),
       children: [
-        { element: <IndexPage />, index: true },
-        { path: 'subastas', element: <Subastas /> },
-        { path: 'ofertar', element: <Ofertar /> },
+        { element: <IndexPage contract={contract} />, index: true },
+        { path: 'subastas', element: <Subastas account={account} contract={contract} /> },
+        { path: 'ofertar', element: <Ofertar account={account} contract={contract} /> },
       ],
     }
   ]);

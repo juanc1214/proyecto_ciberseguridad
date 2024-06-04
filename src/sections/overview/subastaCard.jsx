@@ -1,15 +1,16 @@
+/* eslint-disable no-shadow */
+/* eslint-disable react/prop-types */
+import dayjs from 'dayjs';
 import PropTypes from 'prop-types';
 import { useState, useEffect } from 'react';
+import duration from 'dayjs/plugin/duration';
+
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import dayjs from 'dayjs';
-import duration from 'dayjs/plugin/duration';
 
 dayjs.extend(duration);
-
-// ----------------------------------------------------------------------
 
 const CountdownTimer = ({ targetDate }) => {
   const [timeLeft, setTimeLeft] = useState(calculateTimeLeft(targetDate));
@@ -37,15 +38,14 @@ const CountdownTimer = ({ targetDate }) => {
 
   return (
     <div>
-      <Typography variant="subtitle2" color={'#F5B041'}>
+      <Typography variant="subtitle2" color="#F5B041">
         Termina en: {`${timeLeft.days} días ${timeLeft.hours} horas ${timeLeft.minutes} minutos ${timeLeft.seconds} segundos`}
       </Typography>
     </div>
   );
 };
 
-const SubastaActiva = ({ subasta, icon, color = 'primary', sx, ...other }) => {
-  return (
+const SubastaActiva = ({ subasta, icon, color = 'primary', sx, ...other }) => (
     <Card
       component={Stack}
       spacing={3}
@@ -61,14 +61,14 @@ const SubastaActiva = ({ subasta, icon, color = 'primary', sx, ...other }) => {
       {icon && <Box sx={{ width: 64, height: 64 }}>{icon}</Box>}
 
       <Stack spacing={0.5}>
-        <Typography variant="h4">${400}</Typography>
+        <Typography variant="h4">${subasta.currentBidAmount}</Typography>
 
         <Typography variant="subtitle2" >
           {subasta.nombre}
         </Typography>
 
         <Typography variant="subtitle2" sx={{ color: 'text.disabled' }}>
-          Postor lider: {'nombre'}
+          Postor lider: {subasta.currentWinner}
         </Typography>
 
         <Box>
@@ -78,7 +78,6 @@ const SubastaActiva = ({ subasta, icon, color = 'primary', sx, ...other }) => {
       </Stack>
     </Card>
   );
-};
 
 SubastaActiva.propTypes = {
   color: PropTypes.string,

@@ -1,193 +1,166 @@
-import { useEffect, useState } from 'react';
-
-import Card from '@mui/material/Card';
-import Stack from '@mui/material/Stack';
-import Button from '@mui/material/Button';
-import Container from '@mui/material/Container';
-import Typography from '@mui/material/Typography';
-import Iconify from 'src/components/iconify';
-import { Alert, Box, Dialog, DialogActions, DialogContent, DialogTitle, OutlinedInput, Snackbar } from '@mui/material';
-import Scrollbar from 'src/components/scrollbar';
-import { MobileDateTimePicker } from '@mui/x-date-pickers/MobileDateTimePicker';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+/* eslint-disable react/prop-types */
 import dayjs from 'dayjs';
+import React, { useState, useEffect } from 'react';
+
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { MobileDateTimePicker } from '@mui/x-date-pickers/MobileDateTimePicker';
+import { Box, Card, Alert, Stack, Button, Dialog, Snackbar, Container, Typography, DialogTitle, OutlinedInput, DialogContent, DialogActions } from '@mui/material';
+
 import Label from 'src/components/label';
+import Iconify from 'src/components/iconify';
+import Scrollbar from 'src/components/scrollbar';
 
 
-// ----------------------------------------------------------------------
-
-export default function SubastasPage() {
-
-
+export default function SubastasPage({ account, contract }) {
   const [open, setOpen] = useState(false);
+  const [subastas, setSubastas] = useState([]);
+  const [openSnackBar, setOpenSnackBar] = useState(false);
+
+  useEffect(() => {
+    const getSubastasFromContract = async () => {
+      try {
+        const numSubastas = await contract.methods.getActiveAuctions().call();
+        const subastasData = await Promise.all(
+          numSubastas.map(async (auctionId) => {
+            const auctionDetails = await contract.methods.getAuctionDetails(auctionId).call();
+            return {
+              id: auctionId,
+              nombre: auctionDetails['0'],
+              descripcion: auctionDetails['1'],
+              fechaExp: dayjs.unix(Number(auctionDetails['2'])).format('MM-DD-YYYY  HH:mm A')
+            };
+          })
+        );
+        setSubastas(subastasData);
+      } catch (error) {
+        console.error('Error al obtener subastas:', error);
+      }
+    };
+
+    getSubastasFromContract();
+  }, [contract]);
 
   const handleClickOpen = () => {
     setOpen(true);
   };
 
-  const handleClose = () => {
-    setOpen(false);
+  const getSubastasFromContract = async () => {
+    try {
+      const numSubastas = await contract.methods.getActiveAuctions().call();
+      const subastasData = await Promise.all(
+        numSubastas.map(async (auctionId) => {
+          const auctionDetails = await contract.methods.getAuctionDetails(auctionId).call();
+          return {
+            id: auctionId,
+            nombre: auctionDetails['0'],
+            descripcion: auctionDetails['1'],
+            fechaExp: dayjs.unix(Number(auctionDetails['2'])).format('MM-DD-YYYY  HH:mm A')
+          };
+        })
+      );
+      setSubastas(subastasData);
+    } catch (error) {
+      console.error('Error al obtener subastas:', error);
+    }
   };
 
-  const subastas = JSON.parse(localStorage.getItem('subastas')) ?? []
-
-  return (
-    <Container>
-      <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
-        <Typography variant="h4">Subastas</Typography>
-
-        <Button variant="contained" color="inherit" startIcon={<Iconify icon="eva:plus-fill" />} onClick={handleClickOpen}>
-          Nueva subasta
-        </Button>
-      </Stack>
-
-      <Card sx={{
-        minHeight: '100%',
-        padding: '10px'
-      }}>
-        <Scrollbar>
-          {subastas &&
-            <Stack spacing={3} sx={{ p: 3, pr: 0 }}>
-              {subastas?.map((subasta, index) => (
-                <SubastaItem key={index} subasta={subasta} />
-              ))}
-            </Stack>}
-        </Scrollbar>
-      </Card>
-
-      {open && <SubastaDialog open={open} handleClose={handleClose} />}
-
-
-    </Container>
-  );
-}
-
-function SubastaItem({ subasta }) {
-
-  const { nombre, desc, fechaExp } = subasta;
-
-  return (
-    <Stack direction="row" alignItems="center" spacing={2} paddingRight={'10px'}>
-      <Box sx={{ minWidth: '60%', flexGrow: 1 }}>
-        <Typography color="inherit" variant="subtitle2">
-          {nombre}
-        </Typography>
-
-        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          {desc}
-        </Typography>
-      </Box>
-
-      <Typography width={'20%'} variant="caption" sx={{ pr: 3, flexShrink: 0, color: 'text.secondary', textAlign: 'center' }}>
-        {dayjs(fechaExp)?.format('MM-DD-YYYY  HH:mm A')}
-      </Typography>
-
-      <Box width={'20%'} sx={{
-        textAlign: 'right'
-      }}>
-        <DateChecker targetDate={fechaExp} />
-      </Box>
-    </Stack>
-  );
-}
-
-function SubastaDialog({ open, handleClose }) {
-
-  const [nombre, setNombre] = useState(null)
-
-  const [desc, setDesc] = useState(null)
-
-  const [fechaExp, setFechaExp] = useState(null)
-
-  const [openSnackBar, setOpenSnackBar] = useState(false);
-
-  const Save = () => {
-    if (!nombre || !fechaExp) {
-      setOpenSnackBar(true);
-      return
-    }
-
-    const subastas = JSON.parse(localStorage.getItem('subastas')) ?? []
-
-    const newSubastas = [...subastas, {
-      id: Math.floor(1000 + Math.random()*9000),
-      nombre: nombre,
-      desc: desc,
-      fechaExp: fechaExp?.format()
-    }]
-
-    localStorage.setItem('subastas', JSON.stringify(newSubastas))
-
-    handleClose();
+  const handleClose = () => {
+    setOpen(false);
+    getSubastasFromContract();
   };
 
   const handleCloseSnackBar = () => {
     setOpenSnackBar(false);
   };
 
-  return <>
-    <Dialog
-      open={open}
-      onClose={handleClose}
-      aria-labelledby="alert-dialog-title"
-      aria-describedby="alert-dialog-description"
-    >
-      <DialogTitle id="alert-dialog-title">
-        Ingresar datos de la subasta
-      </DialogTitle>
-      <DialogContent sx={{
-        width: '350px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 1
-      }}>
+  return (
+    <Container>
+      <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
+        <Typography variant="h4">Subastas</Typography>
+        <Button variant="contained" color="inherit" startIcon={<Iconify icon="eva:plus-fill" />} onClick={handleClickOpen}>
+          Nueva subasta
+        </Button>
+      </Stack>
 
-        <OutlinedInput
-          value={nombre}
-          onChange={e => setNombre(e.target.value)}
-          placeholder="Nombre"
-          fullWidth
-        />
+      <Card sx={{ minHeight: '100%', padding: '10px' }}>
+        <Scrollbar>
+          {subastas && (
+            <Stack spacing={3} sx={{ p: 3, pr: 0 }}>
+              {subastas.map((subasta, index) => (
+                <SubastaItem key={index} subasta={subasta} />
+              ))}
+            </Stack>
+          )}
+        </Scrollbar>
+      </Card>
 
-        <OutlinedInput
-          value={desc}
-          onChange={e => setDesc(e.target.value)}
-          placeholder="Descripción"
-          fullWidth
-          multiline
-          rows={2}
-          maxRows={3}
-          aria-invalid
-        />
+      {open && <SubastaDialog open={open} handleClose={handleClose} account={account} contract={contract} />}
+      <Snackbar open={openSnackBar} autoHideDuration={3000} onClose={handleCloseSnackBar}>
+        <Alert onClose={handleCloseSnackBar} severity="error">Por favor, complete todos los campos.</Alert>
+      </Snackbar>
+    </Container>
+  );
+}
 
+function SubastaItem({ subasta }) {
+  const { nombre, descripcion, fechaExp } = subasta;
+
+  return (
+    <Stack direction="row" alignItems="center" spacing={2} paddingRight="10px">
+      <Box sx={{ minWidth: '60%', flexGrow: 1 }}>
+        <Typography color="inherit" variant="subtitle2">{nombre}</Typography>
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>{descripcion}</Typography>
+      </Box>
+      
+      <Typography width="20%" variant="caption" sx={{ pr: 3, flexShrink: 0, color: 'text.secondary', textAlign: 'center' }}>
+        {fechaExp}
+      </Typography>
+      
+      <Box width="20%" sx={{ textAlign: 'right' }}>
+        <DateChecker targetDate={fechaExp} />
+      </Box>
+    </Stack>
+  );
+}
+
+function SubastaDialog({ open, handleClose, contract, account }) {
+  const [nombre, setNombre] = useState('');
+  const [descripcion, setDescripcion] = useState('');
+  const [fechaExp, setFechaExp] = useState(null);
+  const [setOpenSnackBar] = useState(false);
+
+  const handleSave = async () => {
+    if (!nombre || !descripcion || !fechaExp) {
+      setOpenSnackBar(true);
+      return;
+    }
+
+    try {
+      const duration = dayjs(fechaExp).diff(dayjs(), 'second');
+      await contract.methods.createAuction(nombre, descripcion, duration).send({ from: account });
+      handleClose();
+    } catch (error) {
+      console.error('Error al crear la subasta:', error);
+    }
+  };
+
+  return (
+    <Dialog open={open} onClose={handleClose}>
+      <DialogTitle>Crear nueva subasta</DialogTitle>
+      <DialogContent>
+        <OutlinedInput value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre" fullWidth />
+        <OutlinedInput value={descripcion} onChange={(e) => setDescripcion(e.target.value)} placeholder="Descripción" fullWidth multiline rows={3} />
         <LocalizationProvider dateAdapter={AdapterDayjs}>
-          <MobileDateTimePicker value={fechaExp}
-            onChange={newDate => setFechaExp(newDate)}
-            label={'Fecha de finalización'} />
+          <MobileDateTimePicker value={fechaExp} onChange={(date) => setFechaExp(date)} label="Fecha de finalización" fullWidth />
         </LocalizationProvider>
-
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose} >Cancelar</Button>
-        <Button onClick={Save} variant='contained' color='primary' autoFocus>
-          Crear
-        </Button>
+        <Button onClick={handleClose}>Cancelar</Button>
+        <Button onClick={handleSave} variant="contained" color="primary">Crear</Button>
       </DialogActions>
     </Dialog>
-
-    <Snackbar open={openSnackBar} autoHideDuration={3000} onClose={handleCloseSnackBar} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-      <Alert
-        onClose={handleClose}
-        severity={'error'}
-        variant="filled"
-        sx={{ width: '100%' }}
-      >
-        Datos faltantes
-      </Alert>
-    </Snackbar>
-
-  </>
+  );
 }
 
 function DateChecker({ targetDate }) {
@@ -210,5 +183,5 @@ function DateChecker({ targetDate }) {
     return () => clearInterval(interval);
   }, [targetDate]);
 
-  return  <Label color={(status === 'Finalizada' && 'error') || 'success'}>{status}</Label>;
-};
+  return <Label color={(status === 'Finalizada' && 'error') || 'success'}>{status}</Label>;
+}

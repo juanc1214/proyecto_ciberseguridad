@@ -1,35 +1,51 @@
-import { useState } from 'react';
+/* eslint-disable no-shadow */
+/* eslint-disable react/prop-types */
+import dayjs from 'dayjs';
+import { useState, useEffect } from 'react';
 
 import Card from '@mui/material/Card';
 import Stack from '@mui/material/Stack';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
-import dayjs from 'dayjs';
-import { Alert, Button, FormControl, InputLabel, MenuItem, OutlinedInput, Select, Snackbar, TextField } from '@mui/material';
+import { Alert, Button, Select, MenuItem, Snackbar, InputLabel, FormControl, OutlinedInput } from '@mui/material';
 
-
-// ----------------------------------------------------------------------
-
-export default function OfertarPage() {
-
-  const [nombre, setNombre] = useState('')
-
+export default function OfertarPage({ account, contract }) {
+  const [nombre, setNombre] = useState('');
   const [subasta, setSubasta] = useState('');
-
   const [amount, setAmount] = useState('');
+  const [openSnackBar, setOpenSnackBar] = useState(false);
+  const [noti, setNoti] = useState(null);
+  const [subastasActivas, setSubastasActivas] = useState([]);
 
-  const subastas = JSON.parse(localStorage.getItem('subastas')) ?? []
+  useEffect(() => {
+    const fetchActiveAuctions = async () => {
+      try {
+        const activeAuctionIds = await contract.methods.getActiveAuctions().call();
+        const activeAuctionsData = await Promise.all(
+          activeAuctionIds.map(async (auctionId) => {
+            const auctionDetails = await contract.methods.getAuctionDetails(auctionId).call();
+            return {
+              id: auctionId,
+              nombre: auctionDetails[0],
+              descripcion: auctionDetails[1],
+              fechaExp: dayjs.unix(Number(auctionDetails[2])).format('MM-DD-YYYY  HH:mm A')
+            };
+          })
+        );
+        setSubastasActivas(activeAuctionsData);
+      } catch (error) {
+        console.error('Error al cargar las subastas activas:', error);
+      }
+    };
 
-  const subastasActivas = subastas.filter(subasta => dayjs().isBefore(dayjs(subasta.fechaExp)))
+    fetchActiveAuctions();
+  }, [contract]);
 
   const handleChange = (event) => {
     setSubasta(event.target.value);
   };
 
-  const [openSnackBar, setOpenSnackBar] = useState(false);
-  const [noti, setNoti] = useState(null)
-
-  const offer = () => {
+  const offer = async () => {
     if (!nombre || !subasta || !amount) {
       setNoti({
         type: 'error',
@@ -39,21 +55,19 @@ export default function OfertarPage() {
       return
     }
 
-    //Conectar función para ofertar
-    //PENDING
-
-    if(true /*validar respuesta*/){
+    try {
+      await contract.methods.bid(subasta, nombre).send({ from: account, value: amount });
       setNoti({
         type: 'success',
         message: 'Oferta realizada'
-      })
-    }else{
+      });
+    } catch (error) {
+      console.error('Error al realizar la oferta:', error);
       setNoti({
         type: 'error',
-        message: 'Oferta no realizada'
-      })
+        message: 'Error al realizar la oferta',
+      });
     }
-   
     setOpenSnackBar(true);
   };
 
@@ -61,14 +75,13 @@ export default function OfertarPage() {
     setOpenSnackBar(false);
   };
 
-
   return (
-    <Container >
+    <Container>
       <Stack direction="row" alignItems="center" justifyContent="center" mb={5}>
         <Typography variant="h4">Ofertar</Typography>
       </Stack>
 
-      <Stack width={'100%'} direction="row" alignItems="center" justifyContent="center" mb={5}>
+      <Stack width="100%" direction="row" alignItems="center" justifyContent="center" mb={5}>
         <Card sx={{
           minHeight: '70%',
           padding: '20px',
@@ -86,7 +99,7 @@ export default function OfertarPage() {
           />
 
           <FormControl fullWidth>
-            <InputLabel id="demo-simple-select-label">Seleccinoar subasta</InputLabel>
+            <InputLabel id="demo-simple-select-label">Seleccionar subasta</InputLabel>
             <Select
               labelId="demo-simple-select-label"
               id="demo-simple-select"
@@ -94,8 +107,7 @@ export default function OfertarPage() {
               label="Age"
               onChange={handleChange}
             >
-
-              {subastasActivas?.map((subasta) => (
+              {subastasActivas.map((subasta) => (
                 <MenuItem key={subasta.id} value={subasta.id}>{subasta.nombre}</MenuItem>
               ))}
             </Select>
@@ -126,7 +138,6 @@ export default function OfertarPage() {
           {noti?.message}
         </Alert>
       </Snackbar>
-
     </Container>
   );
 }
